@@ -3,6 +3,7 @@ import { blogPosts, categories } from '../data/blogPosts';
 import PostList from '../components/PostList';
 import SearchBar from '../components/SearchBar';
 import CategoryFilter from '../components/CategoryFilter';
+import './Blog.css';
 
 const Blog = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,22 +33,22 @@ const Blog = () => {
   const regularPosts = filteredPosts.filter(post => !post.featured);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="blog-container">
+      <div className="blog-content-wrapper">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+        <div className="blog-header">
+          <h1 className="blog-title">
             Blog
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="blog-subtitle">
             Explore our collection of articles covering technology, personal growth, 
             productivity, and lifestyle topics to help you reach your peak potential.
           </p>
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="mb-6">
+        <div className="blog-filters">
+          <div className="blog-search-container">
             <SearchBar 
               onSearch={setSearchTerm}
               placeholder="Search articles, tags, or topics..."
@@ -62,8 +63,8 @@ const Blog = () => {
         </div>
 
         {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
+        <div className="blog-results-count">
+          <p>
             {filteredPosts.length === 0 
               ? 'No articles found' 
               : `Showing ${filteredPosts.length} article${filteredPosts.length !== 1 ? 's' : ''}`
@@ -78,9 +79,9 @@ const Blog = () => {
 
         {/* No Results Message */}
         {filteredPosts.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg mb-4">No articles found</div>
-            <p className="text-gray-400 mb-6">
+          <div className="blog-no-results">
+            <div className="blog-no-results-title">No articles found</div>
+            <p className="blog-no-results-subtitle">
               Try adjusting your search terms or browse different categories
             </p>
             <button
@@ -88,7 +89,7 @@ const Blog = () => {
                 setSearchTerm('');
                 setSelectedCategory('');
               }}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
+              className="blog-clear-filters-btn"
             >
               Clear Filters
             </button>

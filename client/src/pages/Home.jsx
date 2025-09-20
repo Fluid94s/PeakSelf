@@ -4,13 +4,14 @@ import { ArrowRight, TrendingUp, Users, BookOpen } from 'lucide-react';
 import PostList from '../components/PostList';
 import PostCard from '../components/PostCard';
 import { blogPosts } from '../data/blogPosts';
+import './Home.css';
 
 const Home = () => {
   const featuredPost = blogPosts.find(post => post.featured);
   const recentPosts = blogPosts.filter(post => !post.featured).slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="home-container">
       {/* Hero Section */}
       <section className="hero-section">
         <div className="container">
@@ -31,7 +32,7 @@ const Home = () => {
             </div>
             
             {/* Action Buttons */}
-            <div className="flex flex-col gap-6 justify-center items-center hero-buttons-container">
+            <div className="hero-buttons-container">
               <Link to="/blog" className="hero-button-primary">
                 <span>Explore Articles</span>
                 <ArrowRight className="hero-arrow" />
@@ -53,7 +54,7 @@ const Home = () => {
                 </p>
               </div>
               
-              <div className="flex flex-col gap-8 justify-center items-center trust-stats-container">
+              <div className="trust-stats-container">
                 <div className="text-center">
                   <div className="trust-stat-number">50+</div>
                   <div className="trust-stat-label">Published Articles</div>
@@ -104,7 +105,7 @@ const Home = () => {
       {/* Recent Articles */}
       <section className="recent-section">
         <div className="container">
-          <div className="flex flex-col gap-6 justify-between items-center recent-header">
+          <div className="recent-header">
             <div style={{textAlign: 'center', marginBottom: '2rem'}}>
               <h2 className="recent-title">
                 Latest Insights

@@ -1,12 +1,13 @@
 import React from 'react';
 import PostCard from './PostCard';
+import './PostList.css';
 
 const PostList = ({ posts, featuredPost = null }) => {
   if (!posts || posts.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="text-gray-500 text-lg">No posts found</div>
-        <p className="text-gray-400 mt-2">Check back later for new content!</p>
+      <div className="post-list-empty">
+        <div className="post-list-empty-title">No posts found</div>
+        <p className="post-list-empty-subtitle">Check back later for new content!</p>
       </div>
     );
   }
@@ -15,7 +16,7 @@ const PostList = ({ posts, featuredPost = null }) => {
   const regularPosts = featuredPost ? posts.filter(post => post.id !== featuredPost.id) : posts;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="post-list-grid">
       {featuredPost && (
         <PostCard post={featuredPost} featured={true} />
       )}

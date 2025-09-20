@@ -1,0 +1,35 @@
+/* PostList component styles */
+
+.post-list-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.post-list-empty {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.post-list-empty-title {
+  color: #999999;
+  font-size: 1.125rem;
+}
+
+.post-list-empty-subtitle {
+  color: #cccccc;
+  margin-top: 0.5rem;
+}
+
+/* Responsive grid */
+@media (min-width: 768px) {
+  .post-list-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .post-list-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
