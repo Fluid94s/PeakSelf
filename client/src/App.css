@@ -14,13 +14,24 @@ main {
   background-color: #000000;
   color: #ffffff;
 }
+  display: flex;
+  align-items: center;
+}
 
 .hero-title {
   color: #ffffff;
-  font-size: 4.25rem;
+  font-size: clamp(2.25rem, 9vw, 4.25rem);
   font-weight: 900;
   margin-bottom: 1.25rem;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere; /* allow long words like PEAKSELF to wrap */
+  word-break: break-word;
+  hyphens: auto;
 }
+
+/* Enforce white hero title against global h1 rules */
+.hero-section .hero-title { color: #ffffff !important; }
 
 .hero-subtitle {
   color: #e5e5e5;
@@ -34,11 +45,11 @@ main {
   margin-bottom: 4rem;
 }
 
-.hero-button-primary {
+ .hero-button-primary {
   background-color: #ffffff;
   color: #000000;
   padding: 0.9rem 1.5rem;
-  font-weight: 800;
+  font-weight: 600;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -61,7 +72,7 @@ main {
   background-color: transparent;
   color: #ffffff;
   padding: 0.9rem 1.5rem;
-  font-weight: 800;
+  font-weight: 600;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -129,6 +140,18 @@ main {
 }
 
 /* Featured Section Styles */
+
+/* Very small devices: slightly tighten hero spacing */
+@media (max-width: 420px) {
+  .hero-title {
+    font-size: clamp(2rem, 12vw, 2.75rem);
+    letter-spacing: -0.015em;
+  }
+  .hero-subtitle {
+    font-size: 1.05rem;
+    margin: 0.5rem auto 1.5rem auto;
+  }
+}
 .featured-section {
   background-color: #fafaf9;
   padding: 5rem 0;
@@ -206,7 +229,7 @@ main {
   background-color: #ffffff;
   color: #000000;
   padding: 0.9rem 1.5rem;
-  font-weight: 800;
+  font-weight: 600;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -324,7 +347,7 @@ main {
   background-color: #ffffff;
   color: #000000;
   padding: 0.9rem 1.5rem;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1rem;
   text-transform: none;
   letter-spacing: 0.01em;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -9,9 +9,13 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Admin from './pages/Admin';
+import NotAccessible from './pages/NotAccessible';
 import './App.css';
 
 function App() {
+  const location = useLocation();
+  const hideFooter = location.pathname.startsWith('/admin');
   return (
     <div className="app">
       <Header />
@@ -24,9 +28,11 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/not-accessible" element={<NotAccessible />} />
         </Routes>
       </main>
-      <Footer />
+      {!hideFooter && <Footer />}
     </div>
   );
 }

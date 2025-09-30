@@ -1,9 +1,11 @@
-﻿import express from "express";
+﻿import dotenv from "dotenv";
+import express from "express";
 import cors from "cors";
 import session from "express-session";
+import cookieParser from "cookie-parser";
 import passport from "passport";
-import dotenv from "dotenv";
 
+// Load environment variables first
 dotenv.config();
 
 const app = express();
@@ -15,6 +17,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(cookieParser());
 // Trust proxy in production (required for secure cookies behind proxies)
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
@@ -34,17 +37,29 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Mount auth routes (defined in ./routes/auth.js)
-import authRouter from "./routes/auth.js";
-app.use("/api/auth", authRouter);
-
-import subscribeRouter from "./routes/subscribe.js";
-app.use("/api/subscribe", subscribeRouter);
+// Dynamic import to ensure environment variables are loaded before routes
+async function setupRoutes() {
+  const { default: authRouter } = await import("./routes/auth.js");
+  const { default: subscribeRouter } = await import("./routes/subscribe.js");
+  const { default: adminRouter } = await import("./routes/admin.js");
+  const { default: trackRouter } = await import("./routes/track.js");
+  
+  app.use("/api/auth", authRouter);
+  app.use("/api/subscribe", subscribeRouter);
+  app.use("/api/admin", adminRouter);
+  app.use("/api/track", trackRouter);
+}
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
+// Setup routes and start server
+setupRoutes().then(() => {
+  app.listen(PORT, () => {
+    console.log(`API listening on http://localhost:${PORT}`);
+  });
+}).catch((error) => {
+  console.error('Failed to setup routes:', error);
+  process.exit(1);
 });

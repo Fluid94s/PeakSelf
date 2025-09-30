@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, Clock, User, ArrowRight } from 'lucide-react';
 import './PostCard.css';
 
-const PostCard = ({ post, featured = false }) => {
+const PostCard = ({ post, featured = false, showMeta = true }) => {
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -36,26 +36,28 @@ const PostCard = ({ post, featured = false }) => {
 
       {/* Content */}
       <div className="post-card-content">
-        <div className="post-card-meta">
-          <div className="post-card-meta-item">
-            <Calendar className="post-card-meta-icon" />
-            <span className="post-card-meta-text">
-              {formatDate(post.publishedAt)}
-            </span>
+        {showMeta && (
+          <div className="post-card-meta">
+            <div className="post-card-meta-item">
+              <Calendar className="post-card-meta-icon" />
+              <span className="post-card-meta-text">
+                {formatDate(post.publishedAt)}
+              </span>
+            </div>
+            <div className="post-card-meta-item">
+              <Clock className="post-card-meta-icon" />
+              <span className="post-card-meta-text">
+                {getReadingTime(post.content)} min read
+              </span>
+            </div>
+            <div className="post-card-meta-item">
+              <User className="post-card-meta-icon" />
+              <span className="post-card-meta-text">
+                {post.author}
+              </span>
+            </div>
           </div>
-          <div className="post-card-meta-item">
-            <Clock className="post-card-meta-icon" />
-            <span className="post-card-meta-text">
-              {getReadingTime(post.content)} min read
-            </span>
-          </div>
-          <div className="post-card-meta-item">
-            <User className="post-card-meta-icon" />
-            <span className="post-card-meta-text">
-              {post.author}
-            </span>
-          </div>
-        </div>
+        )}
 
         <h2 className={`post-card-title ${featured ? 'featured' : 'regular'}`}>
           <Link to={`/blog/${post.slug}`} className="post-card-title-link">

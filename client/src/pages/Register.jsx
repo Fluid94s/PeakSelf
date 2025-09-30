@@ -3,25 +3,31 @@ import React, { useState } from 'react';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 export default function Register() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setMsg('');
+    setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ name, email, password })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
-      setMsg('Check your email for a verification link (or server logs in dev).');
+      // Auto-redirect home after successful registration (session cookie set)
+      window.location.href = '/';
     } catch (err) {
-      setMsg(err.message);
+      setMsg(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -78,6 +84,17 @@ export default function Register() {
                     <form onSubmit={onSubmit} className="space-y-5">
                       <div className="space-y-4">
                         <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Full name</label>
+                          <input 
+                            type="text"
+                            className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 text-base bg-white shadow-sm"
+                            placeholder="Your name" 
+                            value={name} 
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
                           <input 
                             type="email"
@@ -106,8 +123,10 @@ export default function Register() {
                         <button
                         type="submit" 
                         className="w-full bg-black text-white font-bold py-4 px-6 rounded-xl hover:bg-gray-800 focus:ring-4 focus:ring-black focus:ring-opacity-50 transition-all duration-200 text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        disabled={loading}
+                        aria-busy={loading}
                         >
-                          Create account
+                          {loading ? 'Creating...' : 'Create account'}
                         </button>
                       </div>
                     </form>
@@ -140,5 +159,4 @@ export default function Register() {
     </div>
   );
 }
-
 

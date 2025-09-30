@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Users, BookOpen } from 'lucide-react';
 import PostList from '../components/PostList';
@@ -7,6 +7,25 @@ import { blogPosts } from '../data/blogPosts';
 import './Home.css';
 
 const Home = () => {
+  // One-time per session traffic tracking
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined') return;
+      if (sessionStorage.getItem('ps_track_sent')) return;
+      sessionStorage.setItem('ps_track_sent', '1');
+      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      fetch(`${API_BASE}/api/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          referrer: document.referrer || null,
+          path: window.location.pathname
+        })
+      }).catch(() => {});
+    } catch (_) {}
+  }, []);
+
   const featuredPost = blogPosts.find(post => post.featured);
   const recentPosts = blogPosts.filter(post => !post.featured).slice(0, 5);
 
@@ -71,7 +90,6 @@ const Home = () => {
                 </div>
               </div>
             </div>
-            
           </div>
         </div>
       </section>
@@ -94,9 +112,9 @@ const Home = () => {
             </p>
           </div>
           
-          {featuredPost && (
+{featuredPost && (
             <div className="featured-card-container">
-              <PostCard post={featuredPost} featured={true} />
+              <PostCard post={featuredPost} featured={true} showMeta={false} />
             </div>
           )}
         </div>
@@ -121,8 +139,8 @@ const Home = () => {
           </div>
           
           <div className="recent-cards-container">
-            {recentPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
+{recentPosts.map((post) => (
+              <PostCard key={post.id} post={post} showMeta={false} />
             ))}
           </div>
           
