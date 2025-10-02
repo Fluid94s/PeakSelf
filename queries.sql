@@ -27,22 +27,17 @@ END $$;
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL,
   password_hash TEXT NULL,
   provider auth_provider NOT NULL DEFAULT 'local',
   google_id TEXT NULL UNIQUE,
   verified BOOLEAN NOT NULL DEFAULT FALSE,
+  role TEXT NOT NULL DEFAULT 'user',
+  name TEXT NULL,
+  avatar_url TEXT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  -- If provider is google, password must be null
-  CONSTRAINT chk_google_password_null CHECK (
-    (provider <> 'google') OR (password_hash IS NULL)
-  ),
-  -- If provider is local, password must be set
-  CONSTRAINT chk_local_password_set CHECK (
-    (provider <> 'local') OR (password_hash IS NOT NULL)
-  )
+  CONSTRAINT users_role_check CHECK (role IN ('user','admin'))
 );
 
 -- Trigger to update updated_at
@@ -58,6 +53,10 @@ DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
 CREATE TRIGGER trg_users_updated_at
 BEFORE UPDATE ON users
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Enforce case-insensitive uniqueness for emails and speed up equality lookups
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_ci ON users ((LOWER(email)));
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- Email verification tokens
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
