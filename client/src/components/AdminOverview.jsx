@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import './AdminOverview.css';
+import './AdminContent.css';
 import './AdminTraffic.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -38,14 +38,17 @@ export default function AdminOverview() {
   const subtitle = d.snapshot_at ? new Date(d.snapshot_at).toLocaleString() : (d.source === 'live' ? 'live' : '');
 
   return (
-    <div className="admin-overview">
+    <div className="admin-content">
       <div className="traffic-toolbar">
         <div className="toolbar-top">
           <div className="title">Overview</div>
         </div>
+        <div className="traffic-chip-row">
+          <div style={{ fontSize: 12, color: '#666' }}>Source: {d.source || 'snapshot'} {subtitle && `• ${subtitle}`}</div>
+        </div>
       </div>
-      <div style={{ marginBottom: 8, color: '#666', fontSize: 12 }}>Source: {d.source || 'snapshot'} {subtitle && `• ${subtitle}`}</div>
-      <div className="stat-grid">
+
+      <div className="card-grid">
         <StatCard title="Total Users" value={fmt(d.total_users)} subtitle={d.signups_24h != null ? `+${fmt(d.signups_24h)} / 24h` : ''} />
         <StatCard title="Verified Users" value={fmt(d.verified_users)} subtitle="" />
         <StatCard title="Newsletter Subs" value={fmt(d.newsletter_total)} subtitle={d.newsletter_signups_24h != null ? `+${fmt(d.newsletter_signups_24h)} / 24h` : ''} />
@@ -56,11 +59,11 @@ export default function AdminOverview() {
       </div>
 
       {Array.isArray(d.traffic_others_refs) && d.traffic_others_refs.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>Top "Others" referrers (7d)</div>
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
+        <div className="content-card">
+          <div className="content-title">Top "Others" Referrers (7d)</div>
+          <ul style={{ margin: '8px 0 0 0', paddingLeft: 18 }}>
             {d.traffic_others_refs.map((ref, idx) => (
-              <li key={idx} style={{ color: '#444', fontSize: 13 }}>{String(ref)}</li>
+              <li key={idx} style={{ color: '#444', fontSize: 13, marginTop: 4 }}>{String(ref)}</li>
             ))}
           </ul>
         </div>
@@ -71,10 +74,26 @@ export default function AdminOverview() {
 
 function StatCard({ title, value, subtitle }) {
   return (
-    <div className="stat-card">
-      <div className="stat-title">{title}</div>
-      <div className="stat-value">{value}</div>
-      <div className="stat-subtitle">{subtitle}</div>
+    <div style={{
+      border: '1px solid #d0d0d0',
+      borderRadius: 12,
+      padding: '1.25rem',
+      background: '#fff',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      cursor: 'default'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-2px)';
+      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+    }}>
+      <div style={{ fontSize: 11, color: '#666', marginBottom: 8, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{title}</div>
+      <div style={{ fontSize: 28, fontWeight: 900, color: '#111', lineHeight: 1 }}>{value}</div>
+      {subtitle && <div style={{ fontSize: 12, color: '#888', marginTop: 8 }}>{subtitle}</div>}
     </div>
   );
 }

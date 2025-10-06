@@ -377,10 +377,10 @@ export default function AdminSessions() {
                       <div className="detail-label">Last Seen</div>
                       <div className="detail-value">{formatFullTime(detail.last_seen_at)}</div>
                     </div>
-                    <div className="detail-item">
-                      <div className="detail-label">Ended</div>
-                      <div className="detail-value">{(detail.ended_at || (Date.now() - new Date(detail.last_seen_at).getTime() > 30*60*1000)) ? (detail.ended_at ? formatFullTime(detail.ended_at) : 'Ended (inferred)') : 'Active'}</div>
-                    </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Ended</div>
+                    <div className="detail-value">{(detail.ended_at || (Date.now() - new Date(detail.last_seen_at).getTime() > 30*60*1000)) ? (detail.ended_at ? formatFullTime(detail.ended_at) : 'Ended (inferred)') : 'Active'}</div>
+                  </div>
                     <div className="detail-item">
                       <div className="detail-label">Page Count</div>
                       <div className="detail-value">{detail.page_count}</div>

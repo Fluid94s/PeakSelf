@@ -459,7 +459,7 @@ return (
                           {logos[ev.source] || logos.other}
                         </div>
                       </td>
-<td>{ev.referrer || 'No referrer'}</td>
+                      <td>{ev.referrer || 'No referrer'}</td>
                       <td>{ev.path || '/'}</td>
                       <td>{ev.ip || 'Unknown'}</td>
                     </tr>
@@ -561,7 +561,7 @@ return (
                 </div>
                 <div className="detail-item">
                   <div className="detail-label">Referrer</div>
-<div className="detail-value">{selectedEvent.referrer || 'No referrer'}</div>
+                  <div className="detail-value">{selectedEvent.referrer || 'No referrer'}</div>
                 </div>
                 {selectedEvent.user_agent && (
                   <div className="detail-item user-agent-detail">
