@@ -28,10 +28,13 @@ async function ensureSchema() {
     await pool.query(`
       ALTER TABLE users
         ADD COLUMN IF NOT EXISTS name TEXT,
-        ADD COLUMN IF NOT EXISTS avatar_url TEXT
+        ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+        ADD COLUMN IF NOT EXISTS first_source TEXT,
+        ADD COLUMN IF NOT EXISTS first_referrer TEXT,
+        ADD COLUMN IF NOT EXISTS first_landing_path TEXT
     `);
   } catch (e) {
-    console.warn('Warning: Failed to ensure users table optional columns (name, avatar_url):', e.message);
+    console.warn('Warning: Failed to ensure users table optional columns (name, avatar_url, first_source, first_referrer, first_landing_path):', e.message);
   }
 }
 

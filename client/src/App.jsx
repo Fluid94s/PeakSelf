@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Admin from './pages/Admin';
 import NotAccessible from './pages/NotAccessible';
+import Tracker from './components/Tracker';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
   return (
     <div className="app">
       <Header />
+      <Tracker />
       <main>
         <Routes>
           <Route path="/" element={<Home />} />

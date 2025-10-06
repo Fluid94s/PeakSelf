@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Users as UsersIcon, FileText, Settings as SettingsIcon } from 'lucide-react';
+import { BarChart3, Users as UsersIcon, FileText, Settings as SettingsIcon, Activity } from 'lucide-react';
 import AdminSettings from '../components/AdminSettings';
 import AdminOverview from '../components/AdminOverview';
 import AdminTraffic from '../components/AdminTraffic';
 import AdminUsers from '../components/AdminUsers';
 import AdminContent from '../components/AdminContent';
+import AdminSessions from '../components/AdminSessions';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -40,6 +41,7 @@ export default function Admin() {
     const base = [
       { key: 'overview', label: 'Overview', icon: BarChart3 },
       { key: 'traffic', label: 'Traffic', icon: BarChart3 },
+      { key: 'sessions', label: 'Sessions', icon: Activity },
       { key: 'users', label: 'Users', icon: UsersIcon },
       { key: 'content', label: 'Content', icon: FileText },
       { key: 'settings', label: 'Settings', icon: SettingsIcon }
@@ -97,6 +99,10 @@ export default function Admin() {
 
         {active === 'traffic' && (
           <AdminTraffic />
+        )}
+
+        {active === 'sessions' && (
+          <AdminSessions />
         )}
 
         {active === 'users' && (

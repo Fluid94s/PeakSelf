@@ -1,0 +1,538 @@
+================================================================================
+                     PEAKSELF OPTIMIZATION & REFACTORING TODO
+================================================================================
+Generated: 2025-10-06
+Priority: 🔴 Critical | 🟡 High | 🟢 Medium | 🔵 Low
+
+================================================================================
+                            PHASE 1: FOUNDATION & SECURITY
+================================================================================
+
+[🔴 CRITICAL] 1. EXTRACT SHARED DATABASE POOL
+  ├─ Create server/utils/db.js with single Pool instance
+  ├─ Remove duplicate Pool instances from:
+  │  ├─ server/routes/auth.js
+  │  ├─ server/routes/admin.js
+  │  ├─ server/routes/subscribe.js
+  │  └─ server/routes/track.js
+  ├─ Update all imports to use shared pool
+  └─ Test database connections across all routes
+  Status: [ ] Not Started
+
+[🔴 CRITICAL] 2. ENVIRONMENT VARIABLE VALIDATION
+  ├─ Create server/utils/validateEnv.js
+  ├─ Validate required vars on startup:
+  │  ├─ DATABASE_URL
+  │  ├─ SESSION_SECRET
+  │  ├─ JWT_SECRET
+  │  └─ NODE_ENV
+  ├─ Exit process if validation fails
+  └─ Add helpful error messages
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🔴 CRITICAL] 3. RATE LIMITING
+  ├─ Install: npm install express-rate-limit
+  ├─ Create server/middleware/rateLimiter.js
+  ├─ Add rate limiters for:
+  │  ├─ Auth endpoints (5 requests/15 min)
+  │  ├─ Subscribe endpoint (3 requests/15 min)
+  │  └─ API endpoints (100 requests/15 min)
+  └─ Apply to routes in server/index.js
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🔴 CRITICAL] 4. HELMET SECURITY HEADERS
+  ├─ Install: npm install helmet
+  ├─ Add to server/index.js (before routes)
+  ├─ Configure CSP for production
+  └─ Test with security headers checker
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟡 HIGH] 5. CSRF PROTECTION
+  ├─ Install: npm install csurf
+  ├─ Create server/middleware/csrf.js
+  ├─ Add CSRF token endpoint
+  ├─ Update forms to include CSRF tokens
+  └─ Add to sensitive routes (POST, PUT, DELETE)
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟡 HIGH] 6. WINSTON LOGGING
+  ├─ Install: npm install winston
+  ├─ Create server/utils/logger.js with:
+  │  ├─ Console transport (development)
+  │  ├─ File transport (error.log)
+  │  └─ File transport (combined.log)
+  ├─ Replace console.log/error with logger
+  ├─ Add request logging middleware
+  └─ Configure log rotation
+  Status: [ ] Not Started
+  Dependencies: None
+
+================================================================================
+                        PHASE 2: CODE STRUCTURE & ORGANIZATION
+================================================================================
+
+[🔴 CRITICAL] 7. EXTRACT AUTHENTICATION MIDDLEWARE
+  ├─ Create server/middleware/auth.js with:
+  │  ├─ verifyJwt()
+  │  ├─ getCurrentUser()
+  │  ├─ requireAuth()
+  │  └─ requireAdmin()
+  ├─ Remove duplicate auth logic from routes
+  └─ Update all routes to use new middleware
+  Status: [ ] Not Started
+  Dependencies: [1]
+
+[🔴 CRITICAL] 8. EXTRACT UTILITY FUNCTIONS
+  ├─ Create server/utils/dateUtils.js
+  │  └─ normalizeRange()
+  ├─ Create server/constants.js
+  │  ├─ COOKIE_MAX_AGE
+  │  ├─ SESSION_TIMEOUT
+  │  ├─ JWT_EXPIRATION
+  │  └─ RATE_LIMITS
+  └─ Replace magic numbers throughout codebase
+  Status: [ ] Not Started
+  Dependencies: [1]
+
+[🟡 HIGH] 9. RESTRUCTURE ADMIN ROUTES (BACKEND)
+  ├─ Create server/routes/admin/ directory with:
+  │  ├─ index.js (main aggregator)
+  │  ├─ dashboard.js (overview & metrics)
+  │  ├─ users.js (user management)
+  │  ├─ traffic.js (traffic analytics)
+  │  └─ sessions.js (session tracking)
+  ├─ Split existing admin.js into modules
+  ├─ Update server/index.js imports
+  ├─ Test all admin endpoints
+  └─ Delete old admin.js file
+  Status: [ ] Not Started
+  Dependencies: [1, 7, 8]
+
+[🟡 HIGH] 9a. SEPARATE ADMIN PANEL TABS (FRONTEND)
+  ├─ Create client/src/pages/admin/ directory with:
+  │  ├─ AdminLayout.jsx (sidebar + routing)
+  │  ├─ OverviewPage.jsx
+  │  ├─ TrafficPage.jsx
+  │  ├─ SessionsPage.jsx
+  │  ├─ UsersPage.jsx
+  │  ├─ ContentPage.jsx
+  │  └─ SettingsPage.jsx
+  ├─ Move admin components to pages/admin/
+  ├─ Update routing to use URL paths (/admin/overview, /admin/users, etc.)
+  ├─ Add browser back/forward navigation support
+  ├─ Update Admin.jsx to be a router wrapper
+  └─ Test all admin navigation
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟢 MEDIUM] 9b. ORGANIZE PROJECT FOLDER STRUCTURE
+  ├─ Frontend organization:
+  │  ├─ Create client/src/hooks/ for custom hooks
+  │  ├─ Create client/src/contexts/ for React contexts
+  │  ├─ Create client/src/utils/ for utility functions
+  │  ├─ Create client/src/styles/ for shared styles
+  │  ├─ Move admin components to pages/admin/components/
+  │  └─ Create client/src/types/ for TypeScript types (future)
+  ├─ Backend organization:
+  │  ├─ Create server/utils/ (db.js, logger.js, cache.js)
+  │  ├─ Create server/middleware/ (already in plan)
+  │  ├─ Create server/services/ for business logic
+  │  ├─ Create server/config/ for configuration
+  │  └─ Create server/validators/ for request validation schemas
+  ├─ Create ARCHITECTURE.md documenting structure
+  └─ Update imports across codebase
+  Status: [ ] Not Started
+  Dependencies: [9, 9a]
+
+[🟡 HIGH] 10. CENTRALIZED ERROR HANDLING
+  ├─ Create server/middleware/errorHandler.js
+  ├─ Add custom error classes:
+  │  ├─ ValidationError
+  │  ├─ AuthenticationError
+  │  ├─ AuthorizationError
+  │  └─ DatabaseError
+  ├─ Add error handler middleware to server/index.js
+  ├─ Replace try-catch error responses
+  └─ Add error logging
+  Status: [ ] Not Started
+  Dependencies: [6]
+
+[🟡 HIGH] 11. MIDDLEWARE ORGANIZATION
+  ├─ Create server/middleware/ directory structure:
+  │  ├─ auth.js (authentication & authorization)
+  │  ├─ validation.js (request validation)
+  │  ├─ errorHandler.js (centralized errors)
+  │  ├─ rateLimiter.js (rate limiting)
+  │  ├─ csrf.js (CSRF protection)
+  │  └─ logger.js (request logging)
+  └─ Organize imports in server/index.js
+  Status: [ ] Not Started
+  Dependencies: [3, 5, 6, 10]
+
+================================================================================
+                          PHASE 3: DATABASE OPTIMIZATION
+================================================================================
+
+[🔴 CRITICAL] 12. POSTGRESQL SESSION STORE
+  ├─ Install: npm install connect-pg-simple
+  ├─ Update server/index.js session config
+  ├─ Use existing 'sessions' table
+  ├─ Test session persistence
+  └─ Remove in-memory session warning
+  Status: [ ] Not Started
+  Dependencies: [1]
+
+[🟡 HIGH] 13. DATABASE MIGRATIONS
+  ├─ Install: npm install node-pg-migrate
+  ├─ Create migrations/ directory
+  ├─ Convert queries.sql to migrations:
+  │  ├─ 001_initial_schema.js
+  │  ├─ 002_add_tracking_tables.js
+  │  ├─ 003_add_indexes.js
+  │  └─ 004_add_dashboard_metrics.js
+  ├─ Add migration scripts to package.json
+  └─ Document migration process in README
+  Status: [ ] Not Started
+  Dependencies: [1]
+
+[🟡 HIGH] 14. IMPLEMENT SOFT DELETES
+  ├─ Add deleted_at column to users table
+  ├─ Add deleted_at column to relevant tables
+  ├─ Create indexes for deleted_at IS NULL
+  ├─ Update queries to exclude soft-deleted records
+  ├─ Add admin endpoint to restore soft-deleted users
+  └─ Create cleanup script for old soft-deleted records
+  Status: [ ] Not Started
+  Dependencies: [13]
+
+[🟢 MEDIUM] 15. QUERY RESULT CACHING
+  ├─ Install: npm install node-cache
+  ├─ Create server/utils/cache.js
+  ├─ Cache dashboard metrics (5-15 min TTL)
+  ├─ Cache traffic summary (5 min TTL)
+  ├─ Add cache invalidation on data changes
+  └─ Add cache hit/miss logging
+  Status: [ ] Not Started
+  Dependencies: [1, 6]
+
+[🟢 MEDIUM] 16. ENABLE PG_STAT_STATEMENTS
+  ├─ Add to PostgreSQL config: shared_preload_libraries = 'pg_stat_statements'
+  ├─ Create extension: CREATE EXTENSION pg_stat_statements;
+  ├─ Create admin endpoint for slow queries
+  ├─ Add query performance monitoring
+  └─ Document slow query optimization process
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟢 MEDIUM] 17. ADD DATABASE INDEXES
+  ├─ Composite indexes for common queries:
+  │  ├─ traffic_events(source, occurred_at DESC)
+  │  ├─ users(role, verified) WHERE verified = TRUE
+  │  └─ session_events(session_id, occurred_at DESC)
+  ├─ Test query performance improvements
+  └─ Document index rationale
+  Status: [ ] Not Started
+  Dependencies: [13]
+
+================================================================================
+                           PHASE 4: BACKEND PERFORMANCE
+================================================================================
+
+[🟡 HIGH] 18. API RESPONSE COMPRESSION
+  ├─ Install: npm install compression
+  ├─ Add to server/index.js (early in middleware chain)
+  ├─ Configure compression threshold (1kb)
+  ├─ Test response sizes
+  └─ Measure performance improvement
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟢 MEDIUM] 19. ENHANCED HEALTH CHECK
+  ├─ Update /api/health endpoint to check:
+  │  ├─ Database connectivity
+  │  ├─ Redis connectivity (if added)
+  │  └─ Disk space
+  ├─ Add /api/health/ready for Kubernetes readiness
+  └─ Add /api/health/live for liveness probe
+  Status: [ ] Not Started
+  Dependencies: [1]
+
+[🟢 MEDIUM] 20. API LAYER ABSTRACTION (Backend)
+  ├─ Create server/utils/response.js with:
+  │  ├─ success(res, data, message)
+  │  ├─ error(res, error, statusCode)
+  │  ├─ paginated(res, data, pagination)
+  │  └─ noContent(res)
+  └─ Update routes to use standard responses
+  Status: [ ] Not Started
+  Dependencies: None
+
+================================================================================
+                           PHASE 5: FRONTEND OPTIMIZATION
+================================================================================
+
+[🔴 CRITICAL] 21. CODE SPLITTING & LAZY LOADING
+  ├─ Update client/src/App.jsx with React.lazy:
+  │  ├─ const Admin = lazy(() => import('./pages/Admin'))
+  │  ├─ const Blog = lazy(() => import('./pages/Blog'))
+  │  ├─ const Post = lazy(() => import('./pages/Post'))
+  │  └─ Wrap Routes in <Suspense>
+  ├─ Add loading component
+  ├─ Test bundle size reduction
+  └─ Measure page load improvements
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🔴 CRITICAL] 22. OPTIMIZE BUNDLE SIZE
+  ├─ Analyze current bundle: npm run build && npx vite-bundle-visualizer
+  ├─ Replace lucide-react with individual imports:
+  │  └─ import { ArrowRight } from 'lucide-react/dist/esm/icons/arrow-right'
+  ├─ Remove unused dependencies
+  ├─ Configure tree-shaking in vite.config.js
+  ├─ Target: Reduce bundle by 30%
+  └─ Document bundle optimization
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟡 HIGH] 23. API LAYER ABSTRACTION (Frontend)
+  ├─ Create client/src/api/client.js with:
+  │  ├─ apiClient.get()
+  │  ├─ apiClient.post()
+  │  ├─ apiClient.put()
+  │  ├─ apiClient.delete()
+  │  └─ Error handling & retry logic
+  ├─ Create client/src/api/endpoints.js for URLs
+  ├─ Replace fetch() calls with apiClient
+  └─ Add request/response interceptors
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟡 HIGH] 24. ENVIRONMENT-SPECIFIC CONFIGS
+  ├─ Create client/src/config.js with:
+  │  ├─ API_BASE
+  │  ├─ IS_DEV
+  │  ├─ IS_PROD
+  │  └─ FEATURE_FLAGS
+  ├─ Replace import.meta.env usage
+  └─ Add .env.development, .env.production
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟡 HIGH] 25. REACT PERFORMANCE OPTIMIZATION
+  ├─ Add React.memo to components:
+  │  ├─ PostCard
+  │  ├─ Header
+  │  ├─ Footer
+  │  └─ SearchBar
+  ├─ Add useMemo for expensive computations
+  ├─ Add useCallback for event handlers
+  ├─ Use React DevTools Profiler
+  └─ Document performance improvements
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟡 HIGH] 26. LOADING SCREENS & SKELETONS
+  ├─ Create client/src/components/LoadingSpinner.jsx
+  ├─ Create client/src/components/SkeletonCard.jsx
+  ├─ Create client/src/components/SkeletonList.jsx
+  ├─ Add to lazy-loaded routes
+  ├─ Add to data fetching states
+  └─ Improve perceived performance
+  Status: [ ] Not Started
+  Dependencies: [21]
+
+[🟢 MEDIUM] 27. PROGRESSIVE WEB APP (PWA)
+  ├─ Install: npm install vite-plugin-pwa
+  ├─ Configure vite.config.js with PWA settings
+  ├─ Create manifest.json with app details
+  ├─ Add service worker for offline support
+  ├─ Add install prompt
+  ├─ Cache static assets
+  ├─ Test offline functionality
+  └─ Add to App Store / Play Store (future)
+  Status: [ ] Not Started
+  Dependencies: [21, 22]
+
+[🟢 MEDIUM] 28. FRONTEND ERROR BOUNDARY
+  ├─ Create client/src/components/ErrorBoundary.jsx
+  ├─ Wrap App with ErrorBoundary
+  ├─ Add error logging to backend
+  ├─ Add fallback UI
+  └─ Test error scenarios
+  Status: [ ] Not Started
+  Dependencies: None
+
+================================================================================
+                             PHASE 6: DOCUMENTATION
+================================================================================
+
+[🟡 HIGH] 29. UPDATE README.md
+  ├─ Add project description
+  ├─ Add setup instructions (step-by-step)
+  ├─ Add database setup & migrations
+  ├─ Add environment variable documentation
+  ├─ Add architecture overview
+  ├─ Add API documentation (or link to Swagger)
+  ├─ Add deployment guide
+  └─ Add troubleshooting section
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟢 MEDIUM] 30. API DOCUMENTATION
+  ├─ Install: npm install swagger-jsdoc swagger-ui-express
+  ├─ Add JSDoc comments to routes
+  ├─ Generate OpenAPI spec
+  ├─ Add /api/docs endpoint
+  └─ Document authentication flow
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟢 MEDIUM] 31. CODE COMMENTS & JSDOC
+  ├─ Add JSDoc comments to complex functions
+  ├─ Document business logic decisions
+  ├─ Add inline comments for tricky code
+  └─ Remove outdated comments
+  Status: [ ] Not Started
+  Dependencies: None
+
+================================================================================
+                          PHASE 7: TESTING & QUALITY
+================================================================================
+
+[🟡 HIGH] 32. UNIT TESTING SETUP
+  ├─ Install: npm install --save-dev vitest @testing-library/react
+  ├─ Install: npm install --save-dev @testing-library/jest-dom
+  ├─ Configure vitest.config.js
+  ├─ Create test/ directory structure
+  ├─ Add test scripts to package.json
+  └─ Set coverage targets (80% backend, 70% frontend)
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟢 MEDIUM] 33. API INTEGRATION TESTS
+  ├─ Install: npm install --save-dev supertest
+  ├─ Create server/tests/ directory
+  ├─ Write tests for:
+  │  ├─ Auth endpoints
+  │  ├─ Admin endpoints
+  │  ├─ User management
+  │  └─ Analytics tracking
+  └─ Run tests in CI/CD
+  Status: [ ] Not Started
+  Dependencies: [32]
+
+[🔵 LOW] 34. E2E TESTING
+  ├─ Install: npm install --save-dev playwright
+  ├─ Create e2e/ directory
+  ├─ Write E2E tests for critical flows:
+  │  ├─ User registration & login
+  │  ├─ Admin dashboard access
+  │  └─ Newsletter subscription
+  └─ Add to CI/CD pipeline
+  Status: [ ] Not Started
+  Dependencies: [32]
+
+================================================================================
+                            PHASE 8: CI/CD & DEVOPS
+================================================================================
+
+[🟢 MEDIUM] 35. DOCKER SUPPORT
+  ├─ Create Dockerfile for backend
+  ├─ Create Dockerfile for frontend
+  ├─ Create docker-compose.yml for local dev
+  ├─ Add .dockerignore
+  ├─ Test Docker builds
+  └─ Document Docker usage
+  Status: [ ] Not Started
+  Dependencies: None
+
+[🟢 MEDIUM] 36. GITHUB ACTIONS CI/CD
+  ├─ Create .github/workflows/test.yml
+  ├─ Add linting step
+  ├─ Add testing step
+  ├─ Add build step
+  ├─ Add deployment step (optional)
+  └─ Add status badges to README
+  Status: [ ] Not Started
+  Dependencies: [32, 35]
+
+[🔵 LOW] 37. MONITORING & ALERTING
+  ├─ Set up error tracking (Sentry)
+  ├─ Set up performance monitoring (New Relic/DataDog)
+  ├─ Add database query monitoring
+  ├─ Set up alerts for critical errors
+  └─ Create monitoring dashboard
+  Status: [ ] Not Started
+  Dependencies: None
+
+================================================================================
+                              PROGRESS TRACKING
+================================================================================
+
+PHASE 1: Foundation & Security        [      ] 0/6 complete
+PHASE 2: Code Structure & Organization [      ] 0/5 complete
+PHASE 3: Database Optimization         [      ] 0/6 complete
+PHASE 4: Backend Performance           [      ] 0/3 complete
+PHASE 5: Frontend Optimization         [      ] 0/8 complete
+PHASE 6: Documentation                 [      ] 0/3 complete
+PHASE 7: Testing & Quality             [      ] 0/3 complete
+PHASE 8: CI/CD & DevOps               [      ] 0/3 complete
+
+OVERALL PROGRESS: [                                              ] 0/37 (0%)
+
+================================================================================
+                                    NOTES
+================================================================================
+
+Priority Guide:
+  🔴 CRITICAL - Must be done before production deployment
+  🟡 HIGH     - Should be done soon, significant impact
+  🟢 MEDIUM   - Important for long-term maintainability
+  🔵 LOW      - Nice to have, can be deferred
+
+Estimated Timeline:
+  - Phase 1-2: 2-3 weeks (Critical foundation work)
+  - Phase 3-4: 1-2 weeks (Performance & database)
+  - Phase 5:   1-2 weeks (Frontend optimization)
+  - Phase 6-8: 1-2 weeks (Documentation, testing, DevOps)
+  - Total:     5-9 weeks (depending on team size)
+
+Tips:
+  - Work through phases sequentially
+  - Complete dependencies before starting dependent tasks
+  - Test thoroughly after each task
+  - Update this file as you complete tasks
+  - Mark completed tasks: [x] or [✓]
+  - Add notes/blockers inline
+  - Review progress weekly
+
+================================================================================
+                                QUICK REFERENCE
+================================================================================
+
+Install Commands (run as needed):
+  npm install express-rate-limit helmet csurf compression
+  npm install connect-pg-simple node-cache winston
+  npm install node-pg-migrate
+  npm install vite-plugin-pwa
+  npm install swagger-jsdoc swagger-ui-express
+  npm install --save-dev vitest @testing-library/react @testing-library/jest-dom
+  npm install --save-dev supertest playwright
+
+Priority Order for Quick Wins:
+  1. Extract shared database pool (#1)
+  2. Environment variable validation (#2)
+  3. Rate limiting (#3)
+  4. Helmet security (#4)
+  5. PostgreSQL session store (#12)
+  6. Code splitting (#21)
+  7. Bundle optimization (#22)
+
+================================================================================
+Last Updated: 2025-10-06
+Next Review: [Add date after first review]
+================================================================================

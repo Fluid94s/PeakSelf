@@ -7,24 +7,6 @@ import { blogPosts } from '../data/blogPosts';
 import './Home.css';
 
 const Home = () => {
-  // One-time per session traffic tracking
-  useEffect(() => {
-    try {
-      if (typeof window === 'undefined') return;
-      if (sessionStorage.getItem('ps_track_sent')) return;
-      sessionStorage.setItem('ps_track_sent', '1');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      fetch(`${API_BASE}/api/track`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          referrer: document.referrer || null,
-          path: window.location.pathname
-        })
-      }).catch(() => {});
-    } catch (_) {}
-  }, []);
 
   const featuredPost = blogPosts.find(post => post.featured);
   const recentPosts = blogPosts.filter(post => !post.featured).slice(0, 5);

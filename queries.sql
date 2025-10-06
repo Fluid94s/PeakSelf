@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
   google_id TEXT NULL UNIQUE,
   verified BOOLEAN NOT NULL DEFAULT FALSE,
   role TEXT NOT NULL DEFAULT 'user',
+  sessions_count BIGINT NOT NULL DEFAULT 0,
   name TEXT NULL,
   avatar_url TEXT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -97,6 +98,149 @@ CREATE TABLE IF NOT EXISTS traffic_events (
 
 CREATE INDEX IF NOT EXISTS idx_traffic_events_time ON traffic_events(occurred_at);
 CREATE INDEX IF NOT EXISTS idx_traffic_events_source ON traffic_events(source);
+
+-- Session-based tracking (visitors, sessions, events)
+-- Visitors represent a 30-day cookie identity. First source is immutable; current source may change.
+CREATE TABLE IF NOT EXISTS visitors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+  first_source TEXT NOT NULL,
+  current_source TEXT NOT NULL,
+  first_referrer TEXT NULL,
+  current_referrer TEXT NULL,
+  first_landing_path TEXT NULL,
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  sessions_count BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_visitors_user ON visitors(user_id);
+CREATE INDEX IF NOT EXISTS idx_visitors_last_seen ON visitors(last_seen_at DESC);
+
+-- Each browsing session lasts 30 minutes of inactivity. Each session has its own source.
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  visitor_id UUID NOT NULL REFERENCES visitors(id) ON DELETE CASCADE,
+  user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+  source TEXT NOT NULL,
+  landing_path TEXT NULL,
+  user_agent TEXT NULL,
+  ip TEXT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ended_at TIMESTAMPTZ NULL,
+  page_count INT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_started ON user_sessions(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_last_seen ON user_sessions(last_seen_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_visitor ON user_sessions(visitor_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_source ON user_sessions(source);
+
+-- Ordered navigation events per session (for click-through details)
+CREATE TABLE IF NOT EXISTS session_events (
+  id BIGSERIAL PRIMARY KEY,
+  session_id UUID NOT NULL REFERENCES user_sessions(id) ON DELETE CASCADE,
+  occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  path TEXT NOT NULL,
+  referrer TEXT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_events_session_time ON session_events(session_id, occurred_at);
+
+-- Trigger: bump session last_seen_at and page_count on each event
+CREATE OR REPLACE FUNCTION bump_session_on_event()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE user_sessions
+  SET last_seen_at = NEW.occurred_at,
+      page_count = page_count + 1
+  WHERE id = NEW.session_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_bump_session_on_event ON session_events;
+CREATE TRIGGER trg_bump_session_on_event
+AFTER INSERT ON session_events
+FOR EACH ROW EXECUTE FUNCTION bump_session_on_event();
+
+-- Trigger: maintain counts and visitor current_source on session creation
+CREATE OR REPLACE FUNCTION on_session_insert_update_counts()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE visitors
+  SET sessions_count = sessions_count + 1,
+      current_source = NEW.source,
+      last_seen_at = NEW.started_at
+  WHERE id = NEW.visitor_id;
+
+  IF NEW.user_id IS NOT NULL THEN
+    UPDATE users
+    SET sessions_count = sessions_count + 1
+    WHERE id = NEW.user_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_on_session_insert ON user_sessions;
+CREATE TRIGGER trg_on_session_insert
+AFTER INSERT ON user_sessions
+FOR EACH ROW EXECUTE FUNCTION on_session_insert_update_counts();
+
+-- Trigger: adjust users.sessions_count if a session moves between users (e.g., anonymous -> logged in)
+CREATE OR REPLACE FUNCTION on_session_user_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (OLD.user_id IS DISTINCT FROM NEW.user_id) THEN
+    IF OLD.user_id IS NOT NULL THEN
+      UPDATE users SET sessions_count = GREATEST(0, sessions_count - 1) WHERE id = OLD.user_id;
+    END IF;
+    IF NEW.user_id IS NOT NULL THEN
+      UPDATE users SET sessions_count = sessions_count + 1 WHERE id = NEW.user_id;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_on_session_user_change ON user_sessions;
+CREATE TRIGGER trg_on_session_user_change
+AFTER UPDATE OF user_id ON user_sessions
+FOR EACH ROW EXECUTE FUNCTION on_session_user_change();
+
+-- Views for listing sessions and drilling down into details
+CREATE OR REPLACE VIEW v_sessions_list AS
+SELECT
+  s.id AS session_id,
+  s.visitor_id,
+  s.user_id,
+  u.email AS user_email,
+  s.source,
+  s.landing_path,
+  s.started_at,
+  s.last_seen_at,
+  s.ended_at,
+  s.page_count
+FROM user_sessions s
+LEFT JOIN users u ON u.id = s.user_id;
+
+CREATE OR REPLACE VIEW v_session_events AS
+SELECT
+  e.session_id,
+  e.occurred_at,
+  e.path,
+  e.referrer
+FROM session_events e
+ORDER BY e.occurred_at ASC, e.id ASC;
+
+-- Helper view: active sessions (last_seen within 30 minutes)
+CREATE OR REPLACE VIEW v_active_sessions AS
+SELECT *
+FROM user_sessions
+WHERE ended_at IS NULL AND last_seen_at >= NOW() - INTERVAL '30 minutes';
 
 -- Newsletter subscriptions
 CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
