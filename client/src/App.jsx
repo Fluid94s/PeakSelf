@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Admin from './pages/Admin';
 import NotAccessible from './pages/NotAccessible';
+import RateLimit from './pages/RateLimit';
 import Tracker from './components/Tracker';
 import './App.css';
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/rate-limit" element={<RateLimit />} />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/not-accessible" element={<NotAccessible />} />
         </Routes>

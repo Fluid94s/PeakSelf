@@ -1,32 +1,45 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search } from 'lucide-react';
 import './Header.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const Header = () => {
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchMe() {
-      try {
-        const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
-        const data = await res.json();
-        if (!cancelled) setUser(data.user);
-      } catch (_) {
-        if (!cancelled) setUser(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  // Fetch user function (reusable)
+  const fetchMe = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
+      const data = await res.json();
+      setUser(data.user);
+      setLoading(false);
+    } catch (_) {
+      setUser(null);
+      setLoading(false);
     }
+  };
+
+  // Fetch on mount
+  useEffect(() => {
     fetchMe();
-    return () => { cancelled = true; };
   }, []);
+
+  // Refetch when location changes to home (catches OAuth redirects)
+  // Only refetch if we're on home page (where OAuth redirects to)
+  useEffect(() => {
+    if (location.pathname === '/' && !user && !loading) {
+      console.log('On home page without user, refetching...');
+      // Small delay to let cookies propagate
+      const timer = setTimeout(fetchMe, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, user, loading]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -44,11 +57,22 @@ const Header = () => {
   }, [userMenuOpen]);
 
   const logout = async () => {
+    console.log('🔴 Frontend: Logout clicked');
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+      console.log('   Making logout request to:', `${API_BASE}/api/auth/logout`);
+      const res = await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+      console.log('   Logout response status:', res.status);
+      const data = await res.json();
+      console.log('   Logout response:', data);
+      setUser(null);
+      console.log('   User state cleared, redirecting to /');
+      window.location.href = '/';
+    } catch (err) {
+      console.error('   ❌ Logout error:', err);
+      // Still clear user and redirect even on error
       setUser(null);
       window.location.href = '/';
-    } catch (_) {}
+    }
   };
 
   const initialsFrom = (nameOrEmail) => {

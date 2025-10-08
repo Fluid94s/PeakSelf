@@ -1,12 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
+
+  // Check for URL error parameters (from OAuth redirects or rate limiting)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const retryIn = params.get('retry_in');
+
+    if (error === 'rate_limit') {
+      // Redirect to dedicated rate limit page
+      navigate(`/rate-limit?retry_in=${retryIn || 15}`);
+    } else if (error === 'oauth_failed') {
+      setMsg('OAuth authentication failed. Please try again.');
+    }
+
+    // Clean up URL parameters
+    if (error && error !== 'rate_limit') {
+      window.history.replaceState({}, '', '/login');
+    }
+  }, [navigate]);
 
   const onSubmit = async (e) => {
     e.preventDefault();

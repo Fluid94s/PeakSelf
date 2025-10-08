@@ -2,27 +2,15 @@ import express from "express";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import bcrypt from "bcryptjs";
-import { Pool } from "pg";
 import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
+import pool, { isDatabaseAvailable, checkDatabaseAvailability } from "../utils/db.js";
+import { authPasswordLimiter, authOAuthLimiter, authGeneralLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
-// Database pool
-const dbUrl = process.env.DATABASE_URL;
-if (typeof dbUrl !== 'string' || !dbUrl) {
-  throw new Error('DATABASE_URL environment variable is not set or is not a string. Please ensure it is correctly configured.');
-}
-
-// Create database pool with connection timeout and retry settings
-const pool = new Pool({ 
-  connectionString: dbUrl,
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30000,
-  max: 10
-});
-
+// Ensure schema columns exist (runs after db connection is established)
 async function ensureSchema() {
   try {
     await pool.query(`
@@ -38,33 +26,12 @@ async function ensureSchema() {
   }
 }
 
-// Test database connection on startup
-let isDatabaseAvailable = false;
-pool.connect(async (err, client, release) => {
-  if (err) {
-    console.warn('Warning: Database connection failed:', err.message);
-    console.warn('Server will start but database features will not work.');
-    console.warn('For local development, consider setting up a local PostgreSQL database.');
-    isDatabaseAvailable = false;
-  } else {
-    console.log('Database connected successfully');
-    isDatabaseAvailable = true;
-    release();
-    await ensureSchema();
+// Run schema check after a short delay to ensure DB is connected
+setTimeout(() => {
+  if (isDatabaseAvailable) {
+    ensureSchema();
   }
-});
-
-// Helper function to check if database operations should be attempted
-function checkDatabaseAvailability(res) {
-  if (!isDatabaseAvailable) {
-    res.status(503).json({ 
-      error: "Database unavailable", 
-      message: "Database connection is not available. Please check your database configuration." 
-    });
-    return false;
-  }
-  return true;
-}
+}, 1000);
 
 // Email transporter (use environment variables)
 const transporter = nodemailer.createTransport({
@@ -226,7 +193,7 @@ function verifyJwtFromRequest(req) {
 }
 
 // Local register (accepts name; can merge a Google-only account by setting a local password)
-router.post("/register", async (req, res) => {
+router.post("/register", authPasswordLimiter, async (req, res) => {
   if (!checkDatabaseAvailability(res)) return;
   
   try {
@@ -282,7 +249,7 @@ const jwtToken = signJwt(user);
 });
 
 // Local login
-router.post("/login", async (req, res) => {
+router.post("/login", authPasswordLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: "Email and password are required" });
@@ -307,45 +274,72 @@ const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [lower
 });
 
 // Start Google auth
-router.get("/google", (req, res, next) => {
+router.get("/google", authOAuthLimiter, (req, res, next) => {
   if (!isGoogleEnabled()) {
     return res.status(503).json({ error: "Google OAuth not configured" });
   }
   
-  console.log('Starting Google OAuth flow');
+  console.log('\n🟦 Starting Google OAuth flow');
+  console.log('   Session ID:', req.sessionID);
+  console.log('   Session exists:', !!req.session);
+  console.log('   Current user:', req.user?.email || 'none');
   return passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
 });
 
 // Google callback
-router.get("/google/callback", (req, res, next) => {
+router.get("/google/callback", authOAuthLimiter, (req, res, next) => {
   if (!isGoogleEnabled()) return res.status(503).json({ error: "Google OAuth not configured" });
   
-  console.log('Google OAuth callback received');
-return passport.authenticate("google", { 
+  console.log('\n🔵 Google OAuth callback received');
+  console.log('   Session ID:', req.sessionID);
+  console.log('   Has session:', !!req.session);
+  console.log('   Cookie header:', req.headers.cookie?.substring(0, 100) + '...');
+  return passport.authenticate("google", { 
     failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=oauth_failed` 
   })(req, res, next);
 }, async (req, res) => {
-  console.log('Google OAuth success, user:', req.user?.email);
+  console.log('\n🟢 Google OAuth authenticate success');
+  console.log('   User from passport:', req.user?.email, 'ID:', req.user?.id);
+  console.log('   Session ID after auth:', req.sessionID);
   try {
     if (req.user) {
       const user = await getUserById(req.user.id);
+      console.log('   User from DB:', user?.email);
+      if (!user) {
+        console.log('   ❌ User not found in DB!');
+        return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=user_not_found`);
+      }
       const token = signJwt(user);
+      console.log('   JWT created:', token.substring(0, 20) + '...');
+      console.log('   Setting cookie and redirecting to:', process.env.CLIENT_URL || 'http://localhost:5173');
       setJwtCookie(res, token);
-      return res.redirect(process.env.CLIENT_URL || 'http://localhost:5173');
+      
+      // Also save session
+      req.session.save((err) => {
+        if (err) {
+          console.error('   ❌ Session save error:', err);
+        } else {
+          console.log('   ✅ Session saved successfully');
+        }
+        return res.redirect(process.env.CLIENT_URL || 'http://localhost:5173');
+      });
+      return;
     }
+    console.log('   ❌ No req.user, redirecting to login with error');
     return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=oauth_failed`);
   } catch (e) {
-    console.error('Post Google login error:', e);
+    console.error('\n❌ Post Google login error:', e);
+    console.error('   Stack:', e.stack);
     return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=oauth_failed`);
   }
 });
 
-router.get("/google/failure", (req, res) => {
+router.get("/google/failure", authGeneralLimiter, (req, res) => {
   res.status(401).json({ error: "Google authentication failed" });
 });
 
 // Verify email
-router.get("/verify-email", async (req, res) => {
+router.get("/verify-email", authGeneralLimiter, async (req, res) => {
   try {
     const token = String(req.query.token || "");
     if (!token) return res.status(400).json({ error: "Missing token" });
@@ -363,18 +357,51 @@ router.get("/verify-email", async (req, res) => {
 });
 
 // Logout
-router.post("/logout", (req, res) => {
+router.post("/logout", authGeneralLimiter, (req, res) => {
+  console.log('\n🔴 Logout request received');
+  console.log('   Session ID:', req.sessionID);
+  console.log('   Has session:', !!req.session);
+  console.log('   Current user:', req.user?.email || 'none');
+  console.log('   Has JWT cookie:', !!req.cookies?.access_token);
+  
+  // Clear JWT cookie with same options as setJwtCookie
   res.clearCookie('access_token', {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
+    secure: process.env.NODE_ENV === 'production',
+    path: '/'  // Must match cookie creation
   });
-  req.logout(() => {
-    res.json({ message: "Logged out" });
+  console.log('   ✅ JWT cookie cleared');
+  
+  // Clear passport session
+  req.logout((err) => {
+    if (err) {
+      console.error('   ❌ Logout session error:', err);
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    console.log('   ✅ Passport logout successful');
+    
+    // Check if session exists before destroying
+    if (!req.session) {
+      console.log('   ⚠️  No session to destroy');
+      return res.json({ message: "Logged out successfully" });
+    }
+    
+    // Destroy session completely
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('   ❌ Session destroy error:', err);
+        // Still return success as cookie is cleared
+        return res.json({ message: "Logged out successfully (session destroy failed)" });
+      }
+      console.log('   ✅ Session destroyed successfully');
+      res.json({ message: "Logged out successfully" });
+    });
   });
 });
 
 // Current user via JWT (fallback to session)
+// No rate limiter - this needs to be called frequently by frontend
 router.get("/me", async (req, res) => {
   try {
     const decoded = verifyJwtFromRequest(req);

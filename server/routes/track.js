@@ -1,15 +1,9 @@
 import express from "express";
-import { Pool } from "pg";
 import { v4 as uuidv4, validate as uuidValidate } from "uuid";
 import jwt from "jsonwebtoken";
+import pool from "../utils/db.js";
 
 const router = express.Router();
-const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30000,
-  max: 10
-});
 
 // Ensure minimal traffic table exists for admin views and basic analytics
 async function ensureTrafficEventsTable() {

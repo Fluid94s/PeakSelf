@@ -1,12 +1,23 @@
-﻿import dotenv from "dotenv";
+import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import session from "express-session";
 import cookieParser from "cookie-parser";
 import passport from "passport";
+import validateEnv from "./utils/validateEnv.js";
+import { 
+  authGeneralLimiter, 
+  subscribeLimiter, 
+  adminLimiter, 
+  trackingLimiter,
+  globalLimiter 
+} from "./middleware/rateLimiter.js";
 
 // Load environment variables first
 dotenv.config();
+
+// Validate environment variables before starting the server
+validateEnv();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -44,10 +55,12 @@ async function setupRoutes() {
   const { default: adminRouter } = await import("./routes/admin.js");
   const { default: trackRouter } = await import("./routes/track.js");
   
+  // Apply specific rate limiters to routes
+  // Note: auth routes have their own specific limiters (password, OAuth, general) applied per-endpoint
   app.use("/api/auth", authRouter);
-  app.use("/api/subscribe", subscribeRouter);
-  app.use("/api/admin", adminRouter);
-  app.use("/api/track", trackRouter);
+  app.use("/api/subscribe", subscribeLimiter, subscribeRouter);
+  app.use("/api/admin", adminLimiter, adminRouter);
+  app.use("/api/track", trackingLimiter, trackRouter);
 }
 
 app.get('/api/health', (req, res) => {

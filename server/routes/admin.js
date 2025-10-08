@@ -1,16 +1,10 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import { Pool } from "pg";
 import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
+import pool from "../utils/db.js";
 
 const router = express.Router();
-const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30000,
-  max: 10
-});
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
